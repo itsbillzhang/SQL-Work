@@ -1,0 +1,240 @@
+Below are questions done as part of Coursera's SQL For Data Science final project,
+where aspects of a Yelp Dataset are analyzed.
+Dataset Found Here:
+https://d3c33hcgiwev3.cloudfront.net/imageAssetProxy.v1/hOlYbrgyEeeTsRKxhJ5OZg_517578844a2fd129650492eda3186cd1_YelpERDiagram.png?expiry=1583712000000&hmac=-bbPfWhMQIi_IkdchL1JLl9UuzxryCCniA0qFn3We04
+
+
+8. Does posing more reviews correlate with more fans?
+
+Yes there is. Consider when we sort each person into a review category, and then count
+the average number of fans each review of category has:
+
+SELECT
+CASE
+      WHEN review_count  >= 1 AND review_count  <= 5 THEN 5
+      WHEN review_count  >= 5 AND review_count  <= 20 THEN 20
+      WHEN review_count  >= 21 AND review_count  <= 50 THEN 50
+      WHEN review_count  >= 51 AND review_count  <= 200 THEN 200
+      WHEN review_count  >= 201 AND review_count  <= 1000 THEN 1000
+      WHEN review_count  >= 1001 AND review_count  <= 2000 THEN 2000
+      END reviewcategories
+,AVG(fans)
+FROM user
+GROUP BY reviewcategories 
+
++------------------+-----------------+
+| reviewcategories |       AVG(fans) |
++------------------+-----------------+
+|             None |             0.0 |
+|                5 | 0.0580469811687 |
+|               20 |  0.396471011883 |
+|               50 |   1.10603290676 |
+|              200 |   5.40082079343 |
+|             1000 |   31.7434782609 |
+|             2000 |         129.625 |
++------------------+-----------------+
+
+9.  Are there more reviews with the word "love" or with the word "hate" in them?
+
+SELECT 
+COUNT(text)
+FROM review
+WHERE text LIKE '%love%';
+
+That produces 232
+
+SELECT 
+COUNT(text)
+FROM review
+WHERE text LIKE '%love%';
+
+That produces 1780, so ther are more with love.
+
+10 
+SELECT name, fans
+FROM user
+ORDER BY fans DESC
+LIMIT 10
+
++-----------+------+
+| name      | fans |
++-----------+------+
+| Amy       |  503 |
+| Mimi      |  497 |
+| Harald    |  311 |
+| Gerald    |  253 |
+| Christine |  173 |
+| Lisa      |  159 |
+| Cat       |  133 |
+| William   |  126 |
+| Fran      |  124 |
+| Lissa     |  120 |
++-----------+------+
+
+11. Is there a strong relationship (or correlation) between having a high number of fans and being listed as 
+ "useful" or "funny?"? Out of the top 10 users with the highest number of fans, what percent are also listed 
+  as “useful” or “funny”?
+
+SELECT name, fans, useful, funny
+FROM user
+ORDER BY fans DESC
+LIMIT 10
+
++-----------+------+--------+--------+
+| name      | fans | useful |  funny |
++-----------+------+--------+--------+
+| Amy       |  503 |   3226 |   2554 |
+| Mimi      |  497 |    257 |    138 |
+| Harald    |  311 | 122921 | 122419 |
+| Gerald    |  253 |  17524 |   2324 |
+| Christine |  173 |   4834 |   6646 |
+| Lisa      |  159 |     48 |     13 |
+| Cat       |  133 |   1062 |    672 |
+| William   |  126 |   9363 |   9361 |
+| Fran      |  124 |   9851 |   7606 |
+| Lissa     |  120 |    455 |    150 |
++-----------+------+--------+--------+
+
+Yes, there is a strong relationship with listed as useful or funny.
+
+
+Part 2:
+1. The category selected is 'Restaurants', city is 'Toronto'
+
+SELECT DISTINCT(business.name)
+,COUNT(hours.hours) AS 'Days Open'
+,category.category
+,business.city
+,CASE 
+     WHEN business.stars >= 2 AND business.stars <= 3 THEN '2-3 Stars'
+     WHEN business.stars >= 4 AND business.stars <= 5 THEN '4-5 Stars'
+     END star_categories
+FROM business
+LEFT JOIN hours 
+ON business.id = hours.business_id
+INNER JOIN category
+ON category.business_id = business.id
+WHERE city = 'Toronto' AND category = 'Restaurants' 
+      AND star_categories <> 'None' AND hours <> 'None'
+GROUP BY name
+
++------------------+-----------+-------------+---------+-----------------+
+| name             | Days Open | category    | city    | star_categories |
++------------------+-----------+-------------+---------+-----------------+
+| 99 Cent Sushi    |         7 | Restaurants | Toronto | 2-3 Stars       |
+| Big Smoke Burger |         7 | Restaurants | Toronto | 2-3 Stars       |
+| Cabin Fever      |         7 | Restaurants | Toronto | 4-5 Stars       |
+| Edulis           |         5 | Restaurants | Toronto | 4-5 Stars       |
+| Pizzaiolo        |         7 | Restaurants | Toronto | 2-3 Stars       |
+| Sushi Osaka      |         7 | Restaurants | Toronto | 4-5 Stars       |
++------------------+-----------+-------------+---------+-----------------+
+
+It seems that one of the higher rated restaurants is only open 5 days.
+
+ii.
+SELECT 
+category.category
+,business.city
+,CASE 
+     WHEN business.stars >= 2 AND business.stars <= 3 THEN '2-3 Stars'
+     WHEN business.stars >= 4 AND business.stars <= 5 THEN '4-5 Stars'
+     END star_categories
+, AVG(business.review_count) AS "Average Review Count"
+FROM business
+INNER JOIN category
+ON category.business_id = business.id
+WHERE city = 'Toronto' AND category = 'Restaurants' 
+      AND star_categories <> 'None'
+GROUP BY star_categories
+
++-------------+---------+-----------------+----------------------+
+| category    | city    | star_categories | Average Review Count |
++-------------+---------+-----------------+----------------------+
+| Restaurants | Toronto | 2-3 Stars       |        28.6666666667 |
+| Restaurants | Toronto | 4-5 Stars       |                 41.2 |
++-------------+---------+-----------------+----------------------+
+
+The restaurants with more stars have more reviews.
+
+iii.
+SELECT 
+category.category
+,business.city
+,CASE 
+     WHEN business.stars >= 2 AND business.stars <= 3 THEN '2-3 Stars'
+     WHEN business.stars >= 4 AND business.stars <= 5 THEN '4-5 Stars'
+     END star_categories
+, AVG(business.latitude) AS "Location Latitude"
+FROM business
+INNER JOIN category
+ON category.business_id = business.id
+WHERE city = 'Toronto' AND category = 'Restaurants' 
+      AND star_categories <> 'None'
+GROUP BY star_categories
+
++-------------+---------+-----------------+-------------------+
+| category    | city    | star_categories | Location Latitude |
++-------------+---------+-----------------+-------------------+
+| Restaurants | Toronto | 2-3 Stars       |     43.6546333333 |
+| Restaurants | Toronto | 4-5 Stars       |          43.67998 |
++-------------+---------+-----------------+-------------------+
+
+The restaurants with higher reviews are on slightly higher ground.
+
+2.
+
+SELECT is_open 
+, AVG(stars) 
+, AVG(review_count)
+FROM business
+GROUP BY is_open
+
++---------+---------------+-------------------+
+| is_open |    AVG(stars) | AVG(review_count) |
++---------+---------------+-------------------+
+|       0 | 3.52039473684 |     23.1980263158 |
+|       1 | 3.67900943396 |     31.7570754717 |
++---------+---------------+-------------------+
+
+Businesses that are open have D1: 0.15 more stars, and D2: 8 more reviews.
+
+3. For this last part of your analysis, you are going to choose the type of
+ analysis you want to conduct on the Yelp dataset and are going to prepare the data 
+ for analysis.
+
+
+i. Indicate the type of analysis you chose to do:
+Is having more positive reviews beneficial to those looking to have more fans,
+average reviews, or harsher reviews.
+         
+ii. Write 1-2 brief paragraphs on the type of data you will need for your analysis and why you chose that data:
+
+I will need data from the average_stars category. I will determine one's popularity by the number
+of fans they have. I am going to have to split the data of one's review tone by 3 categories:
+Positive - Gives an average review of 3.67 - 5
+Average - Average review of 2.34 - 3.66
+Negative - Gives reviews of 1 - 2.33 
+
+iii. Output of your finished dataset:
++--------------+-----------------+
+| review_vibes |       AVG(fans) |
++--------------+-----------------+
+| average      |   1.71821179919 |
+| negative     | 0.0578577013292 |
+| positive     |   1.69108811749 |
++--------------+-----------------+
+
+Turns out those who give more average, (maybe more honest) reviews get more fans.       
+         
+iv. Provide the SQL code you used to create your final dataset:
+
+SELECT 
+CASE 
+      WHEN average_stars BETWEEN 1 AND 2.33 THEN 'negative'
+      WHEN average_stars BETWEEN 2.3301 AND 3.66 THEN 'average'
+      WHEN average_stars BETWEEN 3.6601 AND 5 THEN 'positive'
+      END review_vibes
+, AVG(fans)
+FROM user
+GROUP BY review_vibes
+
